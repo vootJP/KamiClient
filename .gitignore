@@ -13,5 +13,9 @@ out
 /keybindings.json
 /windows.json
 /config.json
+/autochoose.json
+/item_drop.json
+/timers.cfg
 
 /.idea
+
