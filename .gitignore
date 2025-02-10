@@ -7,3 +7,8 @@
 out
 /resources/compiled
 /resources/classes
+
+/accounts.json
+/charterbook.json
+/keybindings.json
+/windows.json
