@@ -15,8 +15,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ItemFilter {
-    private static final Pattern q = Pattern.compile("(?:(\\w+))?(?:^|:)([\\w\\p{L}*]+)?(?:([<>=+~])(\\d+(?:\\.\\d+)?)?([<>=+~])?)?");
-    private static final Pattern float_p = Pattern.compile("(\\d+(?:\\.\\d+)?)");
+	private static final Pattern q = Pattern.compile("(?:(\\w+))?(?:^|:)([\\w\\p{L}*]+)?(?:([<>=+~])(\\d+(?:\\.\\d+)?)?([<>=+~])?)?");
+	private static final Pattern float_p = Pattern.compile("(\\d+(?:\\.\\d+)?)");
     
     public static final String HELP_SIMPLE = "$size[20]{$b{Simple search}}\n" +
 	"Just enter text and items with matching names will get highlighted\n";
@@ -122,119 +122,130 @@ public class ItemFilter {
 	"$font[monospaced,13]{  use:iron>2 }will find items that require more that 2 iron bars/ingots to craft.\n";
     
     public static final String[] FILTER_HELP = {HELP_SIMPLE, HELP_FULL_TEXT, HELP_CONTENT, HELP_QUALITY, HELP_CURIO, HELP_FEP, HELP_ARMOR, HELP_SYMBEL, HELP_ATTR, HELP_EFF, HELP_INPUTS};
-    
-    public boolean matches(List<ItemInfo> info) {
-	if(info == null || info.isEmpty()) {return false;}
-	for (ItemInfo item : info) {
-	    if(match(item)) {return true;}
-	}
-	return match(QualityList.make(info));
-	
-    }
-    
-    final public boolean matches(MenuGrid.Pagina pagina) {
-	return matches(pagina.button().info());
-    }
-    
-    protected boolean match(ItemInfo item) { return false; }
-    
-    public static ItemFilter create(String query) {
-	Compound result = new Compound();
-	Matcher m = q.matcher(query);
-	while (m.find()) {
-	    String tag = m.group(1);
-	    String text = m.group(2);
-	    String sign = m.group(3);
-	    String value = m.group(4);
-	    String opt = m.group(5);
-	    
-	    if(text == null) {
-		text = "";
-	    } else {
-		text = text.toLowerCase();
-	    }
-	    
-	    ItemFilter filter = null;
-	    if(sign != null && tag == null) {
-		switch (text) {
-		    case "energy":
-		    case "nrg":
-			tag = text = "energy";
-			break;
-		    case "hunger":
-		    case "hng":
-			tag = text = "hunger";
-			break;
-		    case "xp":
-		    case "lp":
-		    case "mw":
-		    case "lph":
-			tag = text;
-			break;
-		    case "q":
-			tag = "q";
-			text = "single";
-			break;
-		    case "armor":
-			tag = text;
-			text = "all";
-			break;
+
+	public boolean matches(List<ItemInfo> info) {
+		if(info == null || info.isEmpty()) {return false;}
+		for (ItemInfo item : info) {
+			if(match(item)) {return true;}
 		}
-	    }
-	    if(tag == null) {
-		filter = new Text(text, true);
-	    } else {
-		tag = tag.toLowerCase();
-		switch (tag) {
-		    case "txt":
-			filter = new Text(text, true);
-			break;
-		    case "xp":
-		    case "lp":
-		    case "mw":
-		    case "lph":
-			filter = new XP(tag, sign, value, opt);
-			break;
-		    case "energy":
-		    case "fill":
-			filter = new Food(tag, sign, value, opt);
-			break;
-		    case "has":
-			filter = new Has(text, sign, value, opt);
-			break;
-		    case "q":
-			filter = new Q(text, sign, value, opt);
-			break;
-		    case "fep":
-			filter = new FEP(text, sign, value, opt);
-			break;
-		    case "armor":
-			filter = new Armor(text, sign, value, opt);
-			break;
-		    case "gast":
-		    case "symb":
-			filter = new Gastronomy(text, sign, value, opt);
-			break;
-		    case "attr":
-			filter = new Attribute(text, sign, value, opt);
-			break;
-		    case "use":
-		    case "uses":
-			filter = new Inputs(text, sign, value, opt);
-			break;
-		    case "eff":
-		    case "effect":
-			filter = new Effects(text, sign, value, opt);
-			break;
-		}
-	    }
-	    if(filter != null) {
-		result.add(filter);
-	    }
+		return match(QualityList.make(info));
 	}
-	return result;
-    }
-    
+
+	final public boolean matches(MenuGrid.Pagina pagina) {
+		return matches(pagina.button().info());
+	}
+
+	protected boolean match(ItemInfo item) { return false; }
+
+	public static ItemFilter create(String query) {
+		if (query.contains("|")) {
+			OrCompound result = new OrCompound();
+			String[] parts = query.split("\\|");
+			for (String part : parts) {
+				result.add(createSingle(part.trim()));
+			}
+			return result;
+		}
+		return createSingle(query);
+	}
+
+	private static ItemFilter createSingle(String query) {
+		Compound result = new Compound();
+		Matcher m = q.matcher(query);
+		while (m.find()) {
+			String tag = m.group(1);
+			String text = m.group(2);
+			String sign = m.group(3);
+			String value = m.group(4);
+			String opt = m.group(5);
+
+			if(text == null) {
+				text = "";
+			} else {
+				text = text.toLowerCase();
+			}
+
+			ItemFilter filter = null;
+			if(sign != null && tag == null) {
+				switch (text) {
+					case "energy":
+					case "nrg":
+						tag = text = "energy";
+						break;
+					case "hunger":
+					case "hng":
+						tag = text = "hunger";
+						break;
+					case "xp":
+					case "lp":
+					case "mw":
+					case "lph":
+						tag = text;
+						break;
+					case "q":
+						tag = "q";
+						text = "single";
+						break;
+					case "armor":
+						tag = text;
+						text = "all";
+						break;
+				}
+			}
+			if(tag == null) {
+				filter = new Text(text, true);
+			} else {
+				tag = tag.toLowerCase();
+				switch (tag) {
+					case "txt":
+						filter = new Text(text, true);
+						break;
+					case "xp":
+					case "lp":
+					case "mw":
+					case "lph":
+						filter = new XP(tag, sign, value, opt);
+						break;
+					case "energy":
+					case "fill":
+						filter = new Food(tag, sign, value, opt);
+						break;
+					case "has":
+						filter = new Has(text, sign, value, opt);
+						break;
+					case "q":
+						filter = new Q(text, sign, value, opt);
+						break;
+					case "fep":
+						filter = new FEP(text, sign, value, opt);
+						break;
+					case "armor":
+						filter = new Armor(text, sign, value, opt);
+						break;
+					case "gast":
+					case "symb":
+						filter = new Gastronomy(text, sign, value, opt);
+						break;
+					case "attr":
+						filter = new Attribute(text, sign, value, opt);
+						break;
+					case "use":
+					case "uses":
+						filter = new Inputs(text, sign, value, opt);
+						break;
+					case "eff":
+					case "effect":
+						filter = new Effects(text, sign, value, opt);
+						break;
+				}
+			}
+			if(filter != null) {
+				result.add(filter);
+			}
+		}
+		return result;
+	}
+
     public static void showHelp(UI ui, String ...blocks) {
 	Window log = ui.root.add(new WindowX(new Coord(50, 50), "Filter Help"), new Coord(100, 50));
 	log.justclose = true;
@@ -246,23 +257,40 @@ public class ItemFilter {
 	txt.append(" ");
 	txt.setprog(0);
     }
-    
-    public static class Compound extends ItemFilter {
-	List<ItemFilter> filters = new LinkedList<>();
-	
-	@Override
-	public boolean matches(List<ItemInfo> info) {
-	    if(filters.isEmpty()) {return false;}
-	    for (ItemFilter filter : filters) {
-		if(!filter.matches(info)) {return false;}
-	    }
-	    return true;
+
+	public static class OrCompound extends ItemFilter {
+		List<ItemFilter> filters = new LinkedList<>();
+
+		@Override
+		public boolean matches(List<ItemInfo> info) {
+			if(filters.isEmpty()) {return false;}
+			for (ItemFilter filter : filters) {
+				if(filter.matches(info)) {return true;}
+			}
+			return false;
+		}
+
+		public void add(ItemFilter filter) {
+			filters.add(filter);
+		}
 	}
-	
-	public void add(ItemFilter filter) {
-	    filters.add(filter);
+
+	public static class Compound extends ItemFilter {
+		List<ItemFilter> filters = new LinkedList<>();
+
+		@Override
+		public boolean matches(List<ItemInfo> info) {
+			if(filters.isEmpty()) {return false;}
+			for (ItemFilter filter : filters) {
+				if(!filter.matches(info)) {return false;}
+			}
+			return true;
+		}
+
+		public void add(ItemFilter filter) {
+			filters.add(filter);
+		}
 	}
-    }
     
     private static class Complex extends ItemFilter {
 	protected final String text;
